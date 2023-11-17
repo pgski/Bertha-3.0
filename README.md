@@ -1,3 +1,1 @@
-#   Example Robot: Arcade Drive
-
-Demonstrates the use of the DifferentialDrive class to drive a robot with arcade drive/steering (i.e. single joystick).
+this is betha code update over the 2023-2024 season
