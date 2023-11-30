@@ -9,6 +9,8 @@ import edu.wpi.first.wpilibj.*;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.motorcontrol.PWMTalonSRX;
 
+import java.util.logging.Logger;
+
 
 /**
  * This is a demo program showing the use of the DifferentialDrive class. Runs the motors with
@@ -18,11 +20,13 @@ public class Robot extends TimedRobot
 {
     private final PWMTalonSRX leftMotor = new PWMTalonSRX(8);
     private final PWMTalonSRX rightMotor = new PWMTalonSRX(9);
-
     private final DifferentialDrive robotDrive = new DifferentialDrive(leftMotor, rightMotor);
     private final Joystick stick = new Joystick(0);
     private final Compressor compressor = new Compressor(PneumaticsModuleType.CTREPCM);
     private final DoubleSolenoid solenoid = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 0, 1);
+    private final PWMTalonSRX ejectMotor1 = new PWMTalonSRX(6);
+    private final PWMTalonSRX ejectMotor2 = new PWMTalonSRX(7);
+
     private static final int AIRHORN_BUTTON = 1;
     private static final int HEADLIGHTS_BUTTON = 2;
     private static final int COMPRESSOR_INJECT_BUTTON = 3;
@@ -49,11 +53,12 @@ public class Robot extends TimedRobot
         // That means that the Y axis drives forward
         // and backward, and the X turns left and right.
         updateHeadlights();
+        updateReleaseAir();
         if(stick.getRawButton(COMPRESSOR_INJECT_BUTTON)) solenoid.set(DoubleSolenoid.Value.kForward);
         else solenoid.set(DoubleSolenoid.Value.kReverse);
         toggleRelay(airhorn, stick.getRawButton(AIRHORN_BUTTON));
 
-        robotDrive.arcadeDrive(-stick.getY(), -stick.getX());
+        robotDrive.arcadeDrive(stick.getY(), stick.getX());
     }
     private void updateHeadlights(){
         boolean headLightsOn = stick.getRawButton(HEADLIGHTS_BUTTON);
@@ -62,17 +67,20 @@ public class Robot extends TimedRobot
             boolean firstLightOn = headlightTimer <= 10;
             toggleRelay(headlight1, firstLightOn);
             toggleRelay(headlight2, !firstLightOn);
-            //OLD BAD CODE: DELETE THE COMMENTED CODE IF NEW CODE WORKS OR IS POSSIBLE TO BE FIXED
-//            if(headlightTimer <= 10) {
-//                toggleRelay(headlight1, true);
-//                toggleRelay(headlight2, false);
-//            } else {
-//                toggleRelay(headlight1, false);
-//                toggleRelay(headlight2, true);
-//            }
+
         } else {
             toggleRelay(headlight1, false);
             toggleRelay(headlight2, false);
+        }
+    }
+    private void updateReleaseAir(){
+        double pullAmount = stick.getRawAxis(2); //0.0 - 1.0
+        if(pullAmount < 0.5) {
+            ejectMotor1.set(-1.0);
+            ejectMotor2.set(-1.0);
+        } else {
+            ejectMotor1.set(1.0);
+            ejectMotor2.set(1.0);
         }
     }
     public void toggleRelay(Relay relay, boolean on){
