@@ -9,13 +9,8 @@ import edu.wpi.first.wpilibj.*;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.motorcontrol.PWMTalonSRX;
 
-import java.util.logging.Logger;
+import static edu.wpi.first.wpilibj.DoubleSolenoid.Value.kForward;
 
-
-/**
- * This is a demo program showing the use of the DifferentialDrive class. Runs the motors with
- * arcade steering.
- */
 public class Robot extends TimedRobot
 {
     private final PWMTalonSRX leftMotor = new PWMTalonSRX(8);
@@ -24,16 +19,22 @@ public class Robot extends TimedRobot
     private final Joystick stick = new Joystick(0);
     private final Compressor compressor = new Compressor(PneumaticsModuleType.CTREPCM);
     private final DoubleSolenoid solenoid = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 0, 1);
-    private final PWMTalonSRX ejectMotor1 = new PWMTalonSRX(6);
-    private final PWMTalonSRX ejectMotor2 = new PWMTalonSRX(7);
+    private final PWMTalonSRX ejectMotor1 = new PWMTalonSRX(7);
+    private final PWMTalonSRX ejectMotor2 = new PWMTalonSRX(6);
 
-    private static final int AIRHORN_BUTTON = 1;
-    private static final int HEADLIGHTS_BUTTON = 2;
-    private static final int COMPRESSOR_INJECT_BUTTON = 3;
+    private static final byte AIRHORN_BUTTON = 1;
+    private static final byte HEADLIGHTS_BUTTON = 2;
+    private static final byte COMPRESSOR_INJECT_BUTTON = 3;
+    private static final byte TOGGLE_LIGHTS_BUTTON = 4;
+    private static final byte LEFT_CANNON_FIRE = 2;
+    private static final byte RIGHT_CANNON_FIRE = 3;
     private final Relay headlight1 = new Relay(0);
     private final Relay headlight2 = new Relay(1);
     private final Relay airhorn = new Relay(2);
-    private static byte headlightTimer = 0;
+    private byte headlightTimer = 0;
+    private boolean lightsPermaToggled = false;
+    private final ToggleButtonCallbacker compressorInjectToggler = new ToggleButtonCallbacker(stick, COMPRESSOR_INJECT_BUTTON, solenoid::toggle);
+    private final ToggleButtonCallbacker lightsToggler = new ToggleButtonCallbacker(stick, TOGGLE_LIGHTS_BUTTON, () -> lightsPermaToggled = !lightsPermaToggled);
 
     @Override
     public void robotInit()
@@ -42,6 +43,7 @@ public class Robot extends TimedRobot
         // result in both sides moving forward. Depending on how your robot's
         // gearbox is constructed, you might have to invert the left side instead.
         rightMotor.setInverted(true);
+        solenoid.set(kForward);
         compressor.enableDigital();
     }
     
@@ -54,34 +56,33 @@ public class Robot extends TimedRobot
         // and backward, and the X turns left and right.
         updateHeadlights();
         updateReleaseAir();
-        if(stick.getRawButton(COMPRESSOR_INJECT_BUTTON)) solenoid.set(DoubleSolenoid.Value.kForward);
-        else solenoid.set(DoubleSolenoid.Value.kReverse);
+        compressorInjectToggler.tick();
+
         toggleRelay(airhorn, stick.getRawButton(AIRHORN_BUTTON));
 
         robotDrive.arcadeDrive(stick.getY(), stick.getX());
     }
     private void updateHeadlights(){
-        boolean headLightsOn = stick.getRawButton(HEADLIGHTS_BUTTON);
-        if(headLightsOn){
-            headlightTimer = (byte)((headlightTimer +1)%20);
+        lightsToggler.tick();
+
+        if(lightsPermaToggled){
+            toggleRelay(headlight1, true);
+            toggleRelay(headlight2, true);
+        } else if(stick.getRawButton(HEADLIGHTS_BUTTON)){
+            headlightTimer = (byte)((headlightTimer+1)%20);
             boolean firstLightOn = headlightTimer <= 10;
             toggleRelay(headlight1, firstLightOn);
             toggleRelay(headlight2, !firstLightOn);
-
         } else {
             toggleRelay(headlight1, false);
             toggleRelay(headlight2, false);
         }
     }
     private void updateReleaseAir(){
-        double pullAmount = stick.getRawAxis(2); //0.0 - 1.0
-        if(pullAmount < 0.5) {
-            ejectMotor1.set(-1.0);
-            ejectMotor2.set(-1.0);
-        } else {
-            ejectMotor1.set(1.0);
-            ejectMotor2.set(1.0);
-        }
+        double pullAmountLeft = stick.getRawAxis(LEFT_CANNON_FIRE); //0.0 - 1.0
+        double pullAmountRight = stick.getRawAxis(RIGHT_CANNON_FIRE); //0.0-1.0
+        ejectMotor1.set((int)(pullAmountLeft+.25)); // (>.75) ? 1.0 : 0.0
+        ejectMotor2.set((int)(pullAmountRight+.25)); // (>.75) ? 1.0 : 0.0
     }
     public void toggleRelay(Relay relay, boolean on){
         if(on){
@@ -90,6 +91,27 @@ public class Robot extends TimedRobot
         } else {
             relay.set(Relay.Value.kOff);
             relay.set(Relay.Value.kForward);
+        }
+    }
+    public static class ToggleButtonCallbacker{
+        public final byte BUTTON_CHANNEL;
+        public final Joystick stick;
+        public final Runnable callback;
+        public boolean buttonPressedOnLastUpdate = false;
+        public ToggleButtonCallbacker(Joystick stick, byte buttonChannel, Runnable callback){
+            BUTTON_CHANNEL = buttonChannel;
+            this.stick = stick;
+            this.callback = callback;
+        }
+        public void tick(){
+            if(stick.getRawButton(BUTTON_CHANNEL)){
+                if(!buttonPressedOnLastUpdate){
+                    callback.run();
+                    buttonPressedOnLastUpdate = true;
+                }
+            } else {
+                buttonPressedOnLastUpdate = false;
+            }
         }
     }
 }
