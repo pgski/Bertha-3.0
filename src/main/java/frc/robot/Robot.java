@@ -93,6 +93,11 @@ public class Robot extends TimedRobot
             relay.set(Relay.Value.kForward);
         }
     }
+
+    /**
+     * Helper class that accepts a Joystick, buttonChannel, and Runnable.
+     * This class runs the Runnable when the buttonChannel on the Joystick is toggled (executes the Runnable once per button press).
+     */
     public static class ToggleButtonCallbacker{
         public final byte BUTTON_CHANNEL;
         public final Joystick stick;
