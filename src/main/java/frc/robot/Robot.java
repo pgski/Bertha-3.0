@@ -21,6 +21,8 @@ public class Robot extends TimedRobot
     private final DoubleSolenoid solenoid = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 0, 1);
     private final PWMTalonSRX ejectMotor1 = new PWMTalonSRX(7);
     private final PWMTalonSRX ejectMotor2 = new PWMTalonSRX(6);
+    private final RGB_LED LeftRGB = new RGB_LED(0,1,2,1);
+    private final RGB_LED RightRGB = new RGB_LED(3,4,5,1);
 
     private static final byte AIRHORN_BUTTON = 1;
     private static final byte HEADLIGHTS_BUTTON = 2;
@@ -32,9 +34,9 @@ public class Robot extends TimedRobot
     private final Relay headlight2 = new Relay(1);
     private final Relay airhorn = new Relay(2);
     private byte headlightTimer = 0;
-    private boolean lightsPermaToggled = false;
-    private final ToggleButtonCallbacker compressorInjectToggler = new ToggleButtonCallbacker(stick, COMPRESSOR_INJECT_BUTTON, solenoid::toggle);
-    private final ToggleButtonCallbacker lightsToggler = new ToggleButtonCallbacker(stick, TOGGLE_LIGHTS_BUTTON, () -> lightsPermaToggled = !lightsPermaToggled);
+    private boolean lightsPermToggled = false;
+    private final ToggleButtonCallback compressorInjectToggler = new ToggleButtonCallback(stick, COMPRESSOR_INJECT_BUTTON, solenoid::toggle);
+    private final ToggleButtonCallback lightsToggler = new ToggleButtonCallback(stick, TOGGLE_LIGHTS_BUTTON, () -> lightsPermToggled = !lightsPermToggled);
 
     @Override
     public void robotInit()
@@ -56,6 +58,8 @@ public class Robot extends TimedRobot
         // and backward, and the X turns left and right.
         updateHeadlights();
         updateReleaseAir();
+        LeftRGB.update();
+        RightRGB.update();
         compressorInjectToggler.tick();
 
         toggleRelay(airhorn, stick.getRawButton(AIRHORN_BUTTON));
@@ -65,7 +69,7 @@ public class Robot extends TimedRobot
     private void updateHeadlights(){
         lightsToggler.tick();
 
-        if(lightsPermaToggled){
+        if(lightsPermToggled){
             toggleRelay(headlight1, true);
             toggleRelay(headlight2, true);
         } else if(stick.getRawButton(HEADLIGHTS_BUTTON)){
@@ -91,27 +95,6 @@ public class Robot extends TimedRobot
         } else {
             relay.set(Relay.Value.kOff);
             relay.set(Relay.Value.kForward);
-        }
-    }
-    public static class ToggleButtonCallbacker{
-        public final byte BUTTON_CHANNEL;
-        public final Joystick stick;
-        public final Runnable callback;
-        public boolean buttonPressedOnLastUpdate = false;
-        public ToggleButtonCallbacker(Joystick stick, byte buttonChannel, Runnable callback){
-            BUTTON_CHANNEL = buttonChannel;
-            this.stick = stick;
-            this.callback = callback;
-        }
-        public void tick(){
-            if(stick.getRawButton(BUTTON_CHANNEL)){
-                if(!buttonPressedOnLastUpdate){
-                    callback.run();
-                    buttonPressedOnLastUpdate = true;
-                }
-            } else {
-                buttonPressedOnLastUpdate = false;
-            }
         }
     }
 }
