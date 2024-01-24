@@ -5,15 +5,16 @@
 
 package frc.robot;
 
-import com.sun.tools.jconsole.JConsoleContext;
 import edu.wpi.first.wpilibj.*;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.motorcontrol.PWMTalonSRX;
 
+import java.util.Random;
+
 import static edu.wpi.first.wpilibj.DoubleSolenoid.Value.kForward;
 
-public class Robot extends TimedRobot
-{
+public class Robot extends TimedRobot{
+    int colorType = 0; //0-3
     private final PWMTalonSRX leftMotor = new PWMTalonSRX(8);
     private final PWMTalonSRX rightMotor = new PWMTalonSRX(9);
     private final DifferentialDrive robotDrive = new DifferentialDrive(leftMotor, rightMotor);
@@ -22,12 +23,12 @@ public class Robot extends TimedRobot
     private final DoubleSolenoid solenoid = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 0, 1);
     private final PWMTalonSRX ejectMotor1 = new PWMTalonSRX(7);
     private final PWMTalonSRX ejectMotor2 = new PWMTalonSRX(6);
-    private final RGB_LED LeftRGB = new RGB_LED(0,1,2);
-
     private static final byte AIRHORN_BUTTON = 1;
     private static final byte HEADLIGHTS_BUTTON = 2;
     private static final byte COMPRESSOR_INJECT_BUTTON = 3;
     private static final byte TOGGLE_LIGHTS_BUTTON = 4;
+    private static final byte PREVIOUS_COLOR_BUTTON = 5;
+    private static final byte NEXT_COLOR_BUTTON = 6;
     private static final byte LEFT_CANNON_FIRE = 2;
     private static final byte RIGHT_CANNON_FIRE = 3;
     private final Relay headlight1 = new Relay(0);
@@ -37,7 +38,11 @@ public class Robot extends TimedRobot
     private boolean lightsPermToggled = false;
     private final ToggleButtonCallback compressorInjectToggler = new ToggleButtonCallback(stick, COMPRESSOR_INJECT_BUTTON, solenoid::toggle);
     private final ToggleButtonCallback lightsToggler = new ToggleButtonCallback(stick, TOGGLE_LIGHTS_BUTTON, () -> lightsPermToggled = !lightsPermToggled);
+    private final ToggleButtonCallback previousColorButtonToggle = new ToggleButtonCallback(stick, PREVIOUS_COLOR_BUTTON, () -> colorType = (colorType+3)%4);
 
+    private final ToggleButtonCallback nextColorButtonToggle = new ToggleButtonCallback(stick, NEXT_COLOR_BUTTON, () -> colorType = (colorType+1)%4);
+    DigitalOutput digitalOutput1 = new DigitalOutput(0);
+    DigitalOutput digitalOutput2 = new DigitalOutput(1);
     @Override
     public void robotInit()
     {
@@ -56,11 +61,31 @@ public class Robot extends TimedRobot
         // Drive with arcade drive.
         // That means that the Y axis drives forward
         // and backward, and the X turns left and right.
+        previousColorButtonToggle.tick();
+        nextColorButtonToggle.tick();
+
+        switch(colorType){
+            case 0:
+                digitalOutput1.set(false);
+                digitalOutput2.set(false);
+                break;
+            case 1:
+                digitalOutput1.set(true);
+                digitalOutput2.set(false);
+                break;
+            case 2:
+                digitalOutput1.set(false);
+                digitalOutput2.set(true);
+                break;
+            case 3:
+                digitalOutput1.set(true);
+                digitalOutput2.set(true);
+                break;
+        }
+
         updateHeadlights();
         updateReleaseAir();
-        if(stick.getRawButton(7)) {
-            LeftRGB.update(1, 1, 1);
-        }
+
         compressorInjectToggler.tick();
 
         toggleRelay(airhorn, stick.getRawButton(AIRHORN_BUTTON));
