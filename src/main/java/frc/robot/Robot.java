@@ -9,8 +9,6 @@ import edu.wpi.first.wpilibj.*;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.motorcontrol.PWMTalonSRX;
 
-import java.util.Random;
-
 import static edu.wpi.first.wpilibj.DoubleSolenoid.Value.kForward;
 
 public class Robot extends TimedRobot{
@@ -38,11 +36,11 @@ public class Robot extends TimedRobot{
     private boolean lightsPermToggled = false;
     private final ToggleButtonCallback compressorInjectToggler = new ToggleButtonCallback(stick, COMPRESSOR_INJECT_BUTTON, solenoid::toggle);
     private final ToggleButtonCallback lightsToggler = new ToggleButtonCallback(stick, TOGGLE_LIGHTS_BUTTON, () -> lightsPermToggled = !lightsPermToggled);
-    private final ToggleButtonCallback previousColorButtonToggle = new ToggleButtonCallback(stick, PREVIOUS_COLOR_BUTTON, () -> colorType = (colorType+3)%4);
-
-    private final ToggleButtonCallback nextColorButtonToggle = new ToggleButtonCallback(stick, NEXT_COLOR_BUTTON, () -> colorType = (colorType+1)%4);
+    private final ToggleButtonCallback previousColorButtonToggle = new ToggleButtonCallback(stick, PREVIOUS_COLOR_BUTTON, () -> colorType = (colorType+7)%8);
+    private final ToggleButtonCallback nextColorButtonToggle = new ToggleButtonCallback(stick, NEXT_COLOR_BUTTON, () -> colorType = (colorType+1)%8);
     DigitalOutput digitalOutput1 = new DigitalOutput(0);
     DigitalOutput digitalOutput2 = new DigitalOutput(1);
+    DigitalOutput digitalOutput3 = new DigitalOutput(2);
     @Override
     public void robotInit()
     {
@@ -68,18 +66,42 @@ public class Robot extends TimedRobot{
             case 0:
                 digitalOutput1.set(false);
                 digitalOutput2.set(false);
+                digitalOutput3.set(false);
                 break;
             case 1:
                 digitalOutput1.set(true);
                 digitalOutput2.set(false);
+                digitalOutput3.set(false);
                 break;
             case 2:
                 digitalOutput1.set(false);
                 digitalOutput2.set(true);
+                digitalOutput3.set(false);
                 break;
             case 3:
                 digitalOutput1.set(true);
                 digitalOutput2.set(true);
+                digitalOutput3.set(false);
+                break;
+            case 4:
+                digitalOutput1.set(false);
+                digitalOutput2.set(false);
+                digitalOutput3.set(true);
+                break;
+            case 5:
+                digitalOutput1.set(true);
+                digitalOutput2.set(false);
+                digitalOutput3.set(true);
+                break;
+            case 6:
+                digitalOutput1.set(false);
+                digitalOutput2.set(true);
+                digitalOutput3.set(true);
+                break;
+            case 7:
+                digitalOutput1.set(true);
+                digitalOutput2.set(true);
+                digitalOutput3.set(true);
                 break;
         }
 
