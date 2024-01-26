@@ -12,7 +12,7 @@ import edu.wpi.first.wpilibj.motorcontrol.PWMTalonSRX;
 import static edu.wpi.first.wpilibj.DoubleSolenoid.Value.kForward;
 
 public class Robot extends TimedRobot{
-    int colorType = 0;//0-3
+    int colorType = 0; //0-3
     private final PWMTalonSRX leftMotor = new PWMTalonSRX(8);
     private final PWMTalonSRX rightMotor = new PWMTalonSRX(9);
     private final DifferentialDrive robotDrive = new DifferentialDrive(leftMotor, rightMotor);
@@ -61,7 +61,49 @@ public class Robot extends TimedRobot{
         // and backward, and the X turns left and right.
         previousColorButtonToggle.tick();
         nextColorButtonToggle.tick();
+        updateRGBLights();
 
+        updateHeadlights();
+        updateReleaseAir();
+
+        compressorInjectToggler.tick();
+
+        toggleRelay(airhorn, stick.getRawButton(AIRHORN_BUTTON));
+
+        robotDrive.arcadeDrive(stick.getY(), stick.getX());
+    }
+    private void updateHeadlights(){
+        lightsToggler.tick();
+
+        if(lightsPermToggled){
+            toggleRelay(headlight1, true);
+            toggleRelay(headlight2, true);
+        } else if(stick.getRawButton(HEADLIGHTS_BUTTON)){
+            headlightTimer = (byte)((headlightTimer+1)%20);
+            boolean firstLightOn = headlightTimer <= 10;
+            toggleRelay(headlight1, firstLightOn);
+            toggleRelay(headlight2, !firstLightOn);
+        } else {
+            toggleRelay(headlight1, false);
+            toggleRelay(headlight2, false);
+        }
+    }
+    private void updateReleaseAir(){
+        double pullAmountLeft = stick.getRawAxis(LEFT_CANNON_FIRE); //0.0 - 1.0
+        double pullAmountRight = stick.getRawAxis(RIGHT_CANNON_FIRE); //0.0-1.0
+        ejectMotor1.set((int)(pullAmountLeft+.25)); // (>.75) ? 1.0 : 0.0
+        ejectMotor2.set((int)(pullAmountRight+.25)); // (>.75) ? 1.0 : 0.0
+    }
+    public void toggleRelay(Relay relay, boolean on){
+        if(on){
+            relay.set(Relay.Value.kOn);
+            relay.set(Relay.Value.kReverse);
+        } else {
+            relay.set(Relay.Value.kOff);
+            relay.set(Relay.Value.kForward);
+        }
+    }
+    private void updateRGBLights(){
         switch(colorType){
             case 0:
                 digitalOutput1.set(false);
@@ -103,46 +145,6 @@ public class Robot extends TimedRobot{
                 digitalOutput2.set(true);
                 digitalOutput3.set(true);
                 break;
-        }
-
-        updateHeadlights();
-        updateReleaseAir();
-
-        compressorInjectToggler.tick();
-
-        toggleRelay(airhorn, stick.getRawButton(AIRHORN_BUTTON));
-
-        robotDrive.arcadeDrive(stick.getY(), stick.getX());
-    }
-    private void updateHeadlights(){
-        lightsToggler.tick();
-
-        if(lightsPermToggled){
-            toggleRelay(headlight1, true);
-            toggleRelay(headlight2, true);
-        } else if(stick.getRawButton(HEADLIGHTS_BUTTON)){
-            headlightTimer = (byte)((headlightTimer+1)%20);
-            boolean firstLightOn = headlightTimer <= 10;
-            toggleRelay(headlight1, firstLightOn);
-            toggleRelay(headlight2, !firstLightOn);
-        } else {
-            toggleRelay(headlight1, false);
-            toggleRelay(headlight2, false);
-        }
-    }
-    private void updateReleaseAir(){
-        double pullAmountLeft = stick.getRawAxis(LEFT_CANNON_FIRE); //0.0 - 1.0
-        double pullAmountRight = stick.getRawAxis(RIGHT_CANNON_FIRE); //0.0-1.0
-        ejectMotor1.set((int)(pullAmountLeft+.25)); // (>.75) ? 1.0 : 0.0
-        ejectMotor2.set((int)(pullAmountRight+.25)); // (>.75) ? 1.0 : 0.0
-    }
-    public void toggleRelay(Relay relay, boolean on){
-        if(on){
-            relay.set(Relay.Value.kOn);
-            relay.set(Relay.Value.kReverse);
-        } else {
-            relay.set(Relay.Value.kOff);
-            relay.set(Relay.Value.kForward);
         }
     }
 }
