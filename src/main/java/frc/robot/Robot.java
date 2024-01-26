@@ -12,7 +12,7 @@ import edu.wpi.first.wpilibj.motorcontrol.PWMTalonSRX;
 import static edu.wpi.first.wpilibj.DoubleSolenoid.Value.kForward;
 
 public class Robot extends TimedRobot{
-    int colorType = 0; //0-3
+    int colorType = 0;//0-3
     private final PWMTalonSRX leftMotor = new PWMTalonSRX(8);
     private final PWMTalonSRX rightMotor = new PWMTalonSRX(9);
     private final DifferentialDrive robotDrive = new DifferentialDrive(leftMotor, rightMotor);
