@@ -9,7 +9,11 @@ import edu.wpi.first.wpilibj.*;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.motorcontrol.PWMTalonSRX;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import static edu.wpi.first.wpilibj.DoubleSolenoid.Value.kForward;
+import static edu.wpi.first.wpilibj.DoubleSolenoid.Value.kReverse;
 
 public class Robot extends TimedRobot{
     int colorType = 0; //0-3
@@ -34,10 +38,13 @@ public class Robot extends TimedRobot{
     private final Relay airhorn = new Relay(2);
     private byte headlightTimer = 0;
     private boolean lightsPermToggled = false;
-    private final ToggleButtonCallback compressorInjectToggler = new ToggleButtonCallback(stick, COMPRESSOR_INJECT_BUTTON, solenoid::toggle);
+    private boolean airBeingInjected = false;
+    private final int numberOfColors = 5;
     private final ToggleButtonCallback lightsToggler = new ToggleButtonCallback(stick, TOGGLE_LIGHTS_BUTTON, () -> lightsPermToggled = !lightsPermToggled);
-    private final ToggleButtonCallback previousColorButtonToggle = new ToggleButtonCallback(stick, PREVIOUS_COLOR_BUTTON, () -> colorType = (colorType+7)%8);
-    private final ToggleButtonCallback nextColorButtonToggle = new ToggleButtonCallback(stick, NEXT_COLOR_BUTTON, () -> colorType = (colorType+1)%8);
+    private final ToggleButtonCallback injectAirToggler = new ToggleButtonCallback(stick, COMPRESSOR_INJECT_BUTTON, () -> airBeingInjected = !airBeingInjected);
+
+    private final ToggleButtonCallback previousColorButtonToggle = new ToggleButtonCallback(stick, PREVIOUS_COLOR_BUTTON, () -> colorType = (colorType+(numberOfColors-1))%(numberOfColors));
+    private final ToggleButtonCallback nextColorButtonToggle = new ToggleButtonCallback(stick, NEXT_COLOR_BUTTON, () -> colorType = (colorType+1)%(numberOfColors));
     DigitalOutput digitalOutput1 = new DigitalOutput(0);
     DigitalOutput digitalOutput2 = new DigitalOutput(1);
     DigitalOutput digitalOutput3 = new DigitalOutput(2);
@@ -49,7 +56,8 @@ public class Robot extends TimedRobot{
         // gearbox is constructed, you might have to invert the left side instead.
         rightMotor.setInverted(true);
         solenoid.set(kForward);
-        compressor.disable();
+        compressor.enableDigital();
+        //compressor.disable();
     }
 
 
@@ -66,16 +74,18 @@ public class Robot extends TimedRobot{
         updateHeadlights();
         updateReleaseAir();
 
-        compressorInjectToggler.tick();
-
         toggleRelay(airhorn, stick.getRawButton(AIRHORN_BUTTON));
 
         robotDrive.arcadeDrive(stick.getY(), stick.getX());
+
+//        Logger.getGlobal().log(Level.INFO, "1: " + digitalOutput1.get());
+//        Logger.getGlobal().log(Level.INFO, "2: " + digitalOutput2.get());
+//        Logger.getGlobal().log(Level.INFO, "3: " + digitalOutput3.get());
     }
     private void updateHeadlights(){
         lightsToggler.tick();
 
-        if(lightsPermToggled){
+        if(getLightsPermToggled()){
             toggleRelay(headlight1, true);
             toggleRelay(headlight2, true);
         } else if(stick.getRawButton(HEADLIGHTS_BUTTON)){
@@ -89,6 +99,12 @@ public class Robot extends TimedRobot{
         }
     }
     private void updateReleaseAir(){
+        injectAirToggler.tick();
+        if(airBeingInjected)
+            solenoid.set(kReverse);
+        else
+            solenoid.set(kForward);
+
         double pullAmountLeft = stick.getRawAxis(LEFT_CANNON_FIRE); //0.0 - 1.0
         double pullAmountRight = stick.getRawAxis(RIGHT_CANNON_FIRE); //0.0-1.0
         ejectMotor1.set((int)(pullAmountLeft+.25)); // (>.75) ? 1.0 : 0.0
@@ -130,21 +146,25 @@ public class Robot extends TimedRobot{
                 digitalOutput2.set(false);
                 digitalOutput3.set(true);
                 break;
-            case 5:
-                digitalOutput1.set(true);
-                digitalOutput2.set(false);
-                digitalOutput3.set(true);
-                break;
-            case 6:
-                digitalOutput1.set(false);
-                digitalOutput2.set(true);
-                digitalOutput3.set(true);
-                break;
-            case 7:
-                digitalOutput1.set(true);
-                digitalOutput2.set(true);
-                digitalOutput3.set(true);
-                break;
+//            case 5:
+//                digitalOutput1.set(true);
+//                digitalOutput2.set(false);
+//                digitalOutput3.set(true);
+//                break;
+//            case 6:
+//                digitalOutput1.set(false);
+//                digitalOutput2.set(true);
+//                digitalOutput3.set(true);
+//                break;
+//            case 7:
+//                digitalOutput1.set(true);
+//                digitalOutput2.set(true);
+//                digitalOutput3.set(true);
+//                break;
         }
+    }
+
+    public boolean getLightsPermToggled(){
+        return lightsPermToggled || airBeingInjected;
     }
 }
