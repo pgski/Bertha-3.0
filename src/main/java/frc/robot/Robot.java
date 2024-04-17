@@ -17,9 +17,9 @@ import static edu.wpi.first.wpilibj.DoubleSolenoid.Value.kReverse;
 
 public class Robot extends TimedRobot{
     int colorType = 0; //0-3
-    private final PWMTalonSRX leftMotor = new PWMTalonSRX(8);
-    private final PWMTalonSRX rightMotor = new PWMTalonSRX(9);
-    private final DifferentialDrive robotDrive = new DifferentialDrive(leftMotor, rightMotor);
+    private final PWMTalonSRX leftMotor = new PWMTalonSRX(9);
+    private final PWMTalonSRX rightMotor = new PWMTalonSRX(8);
+    //private final DifferentialDrive robotDrive = new DifferentialDrive(leftMotor, rightMotor);
     private final Joystick stick = new Joystick(0);
     private final Compressor compressor = new Compressor(PneumaticsModuleType.CTREPCM);
     private final DoubleSolenoid solenoid = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 0, 1);
@@ -76,8 +76,9 @@ public class Robot extends TimedRobot{
 
         toggleRelay(airhorn, stick.getRawButton(AIRHORN_BUTTON));
 
-        robotDrive.arcadeDrive(stick.getY(), stick.getX());
-
+        //robotDrive.arcadeDrive(stick.getX(), stick.getY());
+        leftMotor.set(stick.getRawAxis(5));
+        rightMotor.set(stick.getRawAxis(1));
 //        Logger.getGlobal().log(Level.INFO, "1: " + digitalOutput1.get());
 //        Logger.getGlobal().log(Level.INFO, "2: " + digitalOutput2.get());
 //        Logger.getGlobal().log(Level.INFO, "3: " + digitalOutput3.get());
